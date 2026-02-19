@@ -1,0 +1,60 @@
+{
+  "layout": "doc",
+  "tags": "docs",
+  "menu": [
+    {
+      "type": "group",
+      "label": "Getting started",
+      "items": [
+        "index",
+        "install",
+        "configuration"
+      ]
+    },
+    {
+      "type": "group",
+      "label": "API Reference",
+      "items": [
+        {
+          "type": "submenu",
+          "label": "Endpoints",
+          "icon": "network",
+          "open": true,
+          "items": [
+            "api/search",
+            "api/items",
+            "api/admin"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "group",
+      "label": "Search",
+      "items": [
+        {
+          "type": "submenu",
+          "label": "Strategies",
+          "icon": "search",
+          "open": true,
+          "items": [
+            "search/clip",
+            "search/rf",
+            "search/faceted"
+          ]
+        },
+        "filters"
+      ]
+    },
+    {
+      "type": "group",
+      "label": "Internals",
+      "items": [
+        "architecture",
+        "database",
+        "indices",
+        "logging"
+      ]
+    }
+  ]
+}
