@@ -16,7 +16,7 @@ The file has these sections:
 |-------|---------|
 | `[default]` | Global defaults (model device) |
 | `[server]` | Bind address, port, and hot-reload |
-| `[logging]` | Python log level |
+| `[logging]` | Log level and audit log directory |
 | `[[collections]]` | One section per collection |
 | `[[collections.indexes]]` | One section per index, nested under its collection |
 
@@ -55,11 +55,15 @@ reload = true
 ```toml
 [logging]
 level = "INFO"
+directory = "./logs/"
 ```
 
 | Key | Default | Description |
 |-----|---------|-------------|
 | `level` | `"INFO"` | Python log level (`DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`) |
+| `directory` | `"./logs/"` | Directory for the audit log. Created if missing. See [Logging](/logging/). |
+
+Each server start writes a new audit log file, `audit_<YYYY-MM-DD_HH-MM-SS>.log`. All collections log to this file.
 
 ## `[[collections]]`
 
@@ -83,7 +87,6 @@ original_media_url = "https://media.example.com/my_collection/originals"
 | `original_media_url` | Yes | | Base URL for original media |
 | `thumbnail_media_params` | No | `{}` | Query parameters appended to every thumbnail URL |
 | `original_media_params` | No | `{}` | Query parameters appended to every original media URL |
-| `log_directory` | No | `"./logs/"` | Directory for the audit log. See [Logging](/logging/). |
 | `preload_all_indexes` | No | `false` | Load all indexes at startup, not on first use |
 
 ### Media URLs
@@ -180,6 +183,7 @@ reload = false
 
 [logging]
 level = "INFO"
+directory = "./logs/"
 
 # Keyframe search plus transcript search over the same videos.
 [[collections]]
@@ -189,7 +193,6 @@ database_file = "./data/videos_2024/videos_2024.db"
 thumbnail_media_url = "https://media.example.com/videos_2024/thumbs"
 original_media_url = "https://media.example.com/videos_2024/originals"
 original_media_params = { token = "your-token" }
-log_directory = "./logs/"
 
   [[collections.indexes]]
   name = "CLIP"
