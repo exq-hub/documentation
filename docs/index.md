@@ -6,22 +6,24 @@ icon: info
 
 ## What is the Live Services Engine?
 
-The **Live Services Engine (LSE)** is the Python/FastAPI backend for [Exquisitor](https://github.com/exq-hub/exquisitor), a multimedia search and exploration system. It exposes a REST API that powers three distinct search strategies over large image collections:
+The **Live Services Engine (LSE)** is the Python/FastAPI backend for [Exquisitor](https://exquisitor.org), a multimedia search and exploration system. It exposes a REST API for searching and exploring large image and video collections, including:
 
-- **CLIP search** — text-to-image retrieval using the `ViT-SO400M-14-SigLIP-384` CLIP model
-- **Relevance feedback** — iterative search refinement using a linear SVM trained on user-selected positive and negative examples
+- **CLIP search** — text-to-image retrieval with a CLIP model (by default `ViT-SO400M-14-SigLIP-384`)
+- **Text search** — semantic search over text embeddings, such as video transcripts, using sentence-transformers
+- **Relevance feedback** — iterative refinement with a linear SVM trained on positive and negative examples
+- **Temporal search** — an ordered sequence of queries matched to segments that occur one after another in the same video
 - **Faceted filtering** — metadata-only queries using a composable filter expression tree
 
-The engine is designed to serve multiple independent collections simultaneously, each with its own vector index and SQLite metadata database.
+The engine serves multiple independent collections from one process. Each collection has its own SQLite metadata database and one or more vector indexes.
 
 ## Key features
 
-- **Three search modes**: CLIP text search, SVM relevance feedback, and filter-only faceted search work independently or in combination.
-- **Multi-collection support**: Each collection has its own configuration, index, and database. All are loaded at startup and served from a single process.
-- **Flexible vector indices**: Supports both brute-force [Zarr](https://zarr.dev) arrays and approximate nearest-neighbour [FAISS](https://faiss.ai) indices (IVF or HNSW).
-- **Composable filters**: A tree-based filter expression system allows arbitrary AND/OR/NOT combinations of categorical and numerical constraints.
-- **Audit logging**: All search requests, item views, and client events are written to a structured MessagePack log.
-- **Hardware-aware**: Automatically selects CUDA, Apple MPS, or CPU for model inference. The CLIP text model is cached to disk after first download.
+- **Multiple indexes**: A collection can have several indexes. Each has its own model and index type.
+- **Combinable search**: Filters work with every search. Relevance feedback supports pseudo relevance feedback from a text query. Temporal search runs a sequence of queries, which can be of different types.
+- **Exact or approximate search**: Chosen per index.
+- **Composable filters**: Combine filters with AND, OR, and NOT.
+- **Audit logging**: Searches, item requests, and client events are logged.
+- **Runs anywhere**: Uses CUDA, Apple MPS, or CPU. Models are cached on disk, so it runs offline after the first start.
 
 ## Architecture at a glance
 
@@ -31,19 +33,22 @@ Client
   ▼
 FastAPI (main.py)
   │
-  ├── /exq/search/   →  SearchService  →  Strategy (CLIP / RF / Faceted)
+  ├── /exq/search/   →  SearchService  →  Search strategies
   ├── /exq/item/     →  ItemService
-  ├── /exq/          →  Admin / Init / Filters
+  ├── /exq/          →  Session, collection info, logging
   └── /health        →  Health check
                             │
-              ┌─────────────┴─────────────┐
-              ▼                           ▼
-      IndexRepository             DatabaseRepository
-      (FAISS / Zarr)              (SQLite per collection)
+        ┌───────────────────┼───────────────────┐
+        ▼                   ▼                   ▼
+  Model managers     IndexRepository     DatabaseRepository
+  (per embedding     (vector indexes)    (SQLite per collection)
+   type)
 ```
+
+See [Architecture](/architecture/) for details.
 
 ## What's next?
 
 - [Install and run the server](/install/)
-- [Configure collections](/configuration/)
+- [Configure collections and indexes](/configuration/)
 - [Explore the API reference](/api/search/)
