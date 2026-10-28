@@ -23,7 +23,7 @@ The engine serves multiple independent collections from one process. Each collec
 - **Exact or approximate search**: Chosen per index.
 - **Composable filters**: Combine filters with AND, OR, and NOT.
 - **Audit logging**: Searches, item requests, and client events are logged.
-- **Runs anywhere**: Uses CUDA, Apple MPS, or CPU. Models are cached on disk, so it runs offline after the first start.
+- **Hardware-aware**: Uses CUDA, Apple MPS, or CPU automatically. Models are cached on disk after the first download, so the server can run offline. See [Install](/install/#model-cache-and-running-offline).
 
 ## Architecture at a glance
 

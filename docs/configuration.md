@@ -63,7 +63,7 @@ directory = "./logs/"
 | `level` | `"INFO"` | Python log level (`DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`) |
 | `directory` | `"./logs/"` | Directory for the audit log. Created if missing. See [Logging](/logging/). |
 
-Each server start writes a new audit log file, `audit_<YYYY-MM-DD_HH-MM-SS>.log`. All collections log to this file.
+Each server start writes a new audit log file, `audit_<YYYY-MM-DD_HH-MM-SS>.log`. All collections log to this file. With `reload = true`, every reload also starts a new file.
 
 ## `[[collections]]`
 
@@ -87,7 +87,7 @@ original_media_url = "https://media.example.com/my_collection/originals"
 | `original_media_url` | Yes | | Base URL for original media |
 | `thumbnail_media_params` | No | `{}` | Query parameters appended to every thumbnail URL |
 | `original_media_params` | No | `{}` | Query parameters appended to every original media URL |
-| `preload_all_indexes` | No | `false` | Load all indexes at startup, not on first use |
+| `preload_all_indexes` | No | `false` | Load all indexes and their models at startup, not on first use |
 
 ### Media URLs
 
@@ -119,11 +119,33 @@ Each collection needs at least one index. An index is one searchable set of embe
 | `index_type` | Yes | | Index backend. Currently `zarr` or `faiss`. See [Vector indices](/indices/). |
 | `embeddings_file` | Yes | | Path to the embeddings, as a Zarr store (`.zip`, `.zipstore`, or `.zarr`). Relevance feedback reads vectors from it. Must exist. |
 | `index_file` | Depends on `index_type` | | Path to the index file. Required for `faiss`. Not allowed for `zarr`, which searches `embeddings_file` directly. |
-| `embedding_type` | No | `"CLIP"` | Embedding family. Currently `CLIP` or `Text`. Sets which model encodes queries and which search endpoint uses the index. |
-| `model_name` | No | `"ViT-SO400M-14-SigLIP-384"` | Model that produced the embeddings. For `CLIP`, an open_clip model name. For `Text`, a sentence-transformers model name. |
+| `embedding_type` | No | `"CLIP"` | Embedding family. Currently `CLIP` or `Text`. Sets which model encodes queries. `/exq/search/clip` searches `CLIP` indexes, and `/exq/search/text` searches `Text` indexes. Relevance feedback and temporal search accept either. |
+| `model_name` | No | `"ViT-SO400M-14-SigLIP-384"` | Model that produced the embeddings. See [Model names](#model-names). |
 | `source_type` | No | `"Image"` | Media type of the indexed items. Currently `Image`, `Video`, `Audio`, `Text`, or `Other`. Must exist in the database's `source_types` table. |
 | `tagset` | No | `"<name> Index ID"` | Database tagset that maps media IDs to index positions. See [Sharing an id space](#sharing-an-id-space). |
 | `default` | See below | `false` | Marks the index used when a request doesn't name one |
+
+### Model names
+
+`CLIP` indexes are loaded with open_clip, and only open_clip models with `webli` weights can be used by name, such as the default `ViT-SO400M-14-SigLIP-384`. To use another model from the Hugging Face Hub, set `model_name = "hf-hub:organization/repository"`. For a model from anywhere else, download it into a folder with an `open_clip_config.json` and a weights file, and set `model_name = "local-dir:/path/to/folder"`.
+
+`Text` indexes are loaded with sentence-transformers. To use a model from the Hugging Face Hub, set `model_name` to its name, such as `"sentence-transformers/all-MiniLM-L6-v2"`. For a model from anywhere else, download it into a folder as saved by sentence-transformers, and set `model_name = "/path/to/folder"`.
+
+A model already in the Hugging Face cache is not downloaded again.
+
+On Windows, `hf-hub:` and `local-dir:` names can't be used directly, as the cached file names would contain a `:`. Instead, save the text encoder and tokenizer yourself under a name of your choice, and set `model_name` to that name. The engine then loads them and skips the download:
+
+```python
+import open_clip, torch
+
+model = open_clip.create_model("hf-hub:organization/repository", device="cpu")
+torch.save(model.text, "data/models/my-model_text.pth")
+torch.save(open_clip.get_tokenizer("hf-hub:organization/repository"), "data/tokenizers/my-model.pth")
+```
+
+Then set `model_name = "my-model"`.
+
+See [Install](/install/#model-cache-and-running-offline) for where models are downloaded and cached.
 
 ### Default index
 

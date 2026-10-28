@@ -64,7 +64,7 @@ A healthy server responds with:
 ```json
 {
   "status": "healthy",
-  "version": "0.2.0",
+  "version": "x.y.z",
   "collections": ["my_collection"],
   "models_loaded": { "clip": true }
 }
@@ -87,15 +87,15 @@ A healthy server responds with:
 
 ## Model cache and running offline
 
-The first time a CLIP model is loaded, the engine downloads it from [open_clip](https://github.com/mlfoundations/open_clip) and caches:
+The first time a CLIP model is loaded, [open_clip](https://github.com/mlfoundations/open_clip) downloads the full model to the Hugging Face cache (`~/.cache/huggingface/hub`, or `HF_HUB_CACHE` if set). The engine then keeps only what it needs for text queries:
 
 - the text encoder in `data/models/<model_name>_text.pth`
 - the tokenizer in `data/tokenizers/<model_name>.pth`
 
-Later startups load from these files. Once every configured model has loaded once, the server runs without internet.
+Later startups load only the text encoder from these files, without the need of internet. The copy in the Hugging Face cache is no longer used and can be deleted.
 
 At startup, only the default index's model loads. Other models load on first use, so query those indexes once while online. With `preload_all_indexes = true`, all models load at startup.
 
-Delete a cached file to force a fresh download, for example after upgrading `open_clip_torch` or `transformers`.
+After upgrading `open_clip_torch` or `transformers`, delete the model's files in `data/models/` and `data/tokenizers/`. They are rebuilt on the next start, from the Hugging Face cache if the model is still there, or by downloading it again.
 
-Text (sentence-transformers) models are not stored in `data/`. They download to the Hugging Face cache (`~/.cache/huggingface/hub`, or `HF_HOME` if set). To stop them checking online for updates at startup, set `HF_HUB_OFFLINE=1`.
+Text (sentence-transformers) models are not stored in `data/`. They download to the Hugging Face cache (`~/.cache/huggingface/hub`, or `HF_HUB_CACHE` if set). To stop them checking online for updates at startup, set `HF_HUB_OFFLINE=1`.
