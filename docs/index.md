@@ -8,11 +8,11 @@ icon: info
 
 The **Live Services Engine (LSE)** is the Python/FastAPI backend for [Exquisitor](https://exquisitor.org), a multimedia search and exploration system. It exposes a REST API for searching and exploring large image and video collections, including:
 
-- **CLIP search** — text-to-image retrieval with a CLIP model (by default `ViT-SO400M-14-SigLIP-384`)
-- **Text search** — semantic search over text embeddings, such as video transcripts, using sentence-transformers
-- **Relevance feedback** — iterative refinement with a linear SVM trained on positive and negative examples
-- **Temporal search** — an ordered sequence of queries matched to segments that occur one after another in the same video
-- **Faceted filtering** — metadata-only queries using a composable filter expression tree
+- **CLIP search**: text-to-image retrieval with a CLIP model (by default `ViT-SO400M-14-SigLIP-384`)
+- **Text search**: semantic search over text embeddings, such as video transcripts, using sentence-transformers
+- **Relevance feedback**: iterative refinement with a linear SVM trained on positive and negative examples
+- **Temporal search**: an ordered sequence of queries matched to segments that occur one after another in the same video
+- **Faceted filtering**: metadata-only queries using a composable filter expression tree
 
 The engine serves multiple independent collections from one process. Each collection has its own SQLite metadata database and one or more vector indexes.
 

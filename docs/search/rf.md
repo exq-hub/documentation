@@ -51,7 +51,7 @@ PRF takes a text search one step forward as an RF session. The top results act a
 1. User enters "news anchor at a desk"
    → CLIP search returns 20 results
 
-2. User marks items 42, 17 as relevant; item 830 as not relevant
+2. User marks items 42 and 17 as relevant, and item 830 as not relevant
    → RF request: pos=[42, 17], neg=[830]
    → SVM trains, returns refined results
 
@@ -66,4 +66,4 @@ Like CLIP search, RF supports the `filters` field. Items that don't match the fi
 
 ## Request reference
 
-See [Search endpoints — POST /exq/search/rf](/api/search/#post-%2Fexq%2Fsearch%2Frf) for the full request and response schema.
+See [POST /exq/search/rf](/api/search/#post-%2Fexq%2Fsearch%2Frf) in the search endpoints for the full request and response schema.

@@ -18,4 +18,4 @@ Each Text index sets its model with `model_name`. See [Configuration](/configura
 
 ## Request reference
 
-See [Search endpoints — POST /exq/search/text](/api/search/#post-%2Fexq%2Fsearch%2Ftext) for the full request and response schema.
+See [POST /exq/search/text](/api/search/#post-%2Fexq%2Fsearch%2Ftext) in the search endpoints for the full request and response schema.
