@@ -253,7 +253,7 @@ Segment times come from the `Start (ms)`, `Keyframe (ms)`, or `Time (ms)` tagset
 
 Returns items that match a filter tree. No vector search is involved.
 
-If a group matches, for example a video by its title, its items are returned instead of the group. Results are in no particular order.
+Each item is checked against its own tags and the tags of its group, so the keyframes of a video match a filter on the video's title. Only items in the requested index are returned, for example only keyframes for a CLIP index of keyframes. Results are in no particular order.
 
 See [Faceted search](/search/faceted/) for how it works.
 
@@ -270,10 +270,10 @@ See [Faceted search](/search/faceted/) for how it works.
         {
           "kind": "leaf",
           "filter": {
-            "id": 3,
+            "id": 2,
             "tagtype_id": 1,
             "constraint": {
-              "value_ids": [10, 11],
+              "value_ids": [10, 65],
               "operator": "OR"
             }
           }
@@ -285,7 +285,8 @@ See [Faceted search](/search/faceted/) for how it works.
     "session": "abc123",
     "collection": "my_collection",
     "modelId": 1
-  }
+  },
+  "index_name": null
 }
 ```
 
@@ -294,6 +295,7 @@ See [Faceted search](/search/faceted/) for how it works.
 | `n` | `integer` | Yes | Maximum number of results |
 | `filters` | `ActiveFilters` | Yes | Filter tree. See [Filters](/filters/). |
 | `session_info` | `SessionInfo` | Yes | Session context |
+| `index_name` | `string` | No | Any index of the collection. Only its items are returned. Defaults to the collection's default index. |
 
 ### Response
 
