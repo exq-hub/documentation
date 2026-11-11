@@ -15,8 +15,8 @@ The engine builds its positive and negative example sets from multiple sources:
 | Situation | Behaviour |
 |-----------|-----------|
 | `pos` IDs provided | Use them directly |
-| `pos` is empty + `query` provided | Run CLIP search, take top 10 results as pseudo-positives |
-| `pos` still empty | Sample 5 random items from the collection |
+| `query` provided | Pseudo-relevance feedback (see below) |
+| No `pos` IDs and no `query` | Sample 5 random items from the collection |
 | `neg` IDs provided | Use them directly |
 | `neg` is empty | Sample 5 random items from the collection |
 
@@ -24,11 +24,11 @@ This fallback chain ensures the SVM always has training data, even at the start 
 
 ### 2. Fetch embeddings
 
-The engine retrieves the raw embedding vectors for all positive and negative examples from the `EmbeddingsFile` Zarr archive.
+The engine retrieves the raw embedding vectors for all positive and negative examples from the index's `embeddings_file`.
 
 ### 3. Train the SVM
 
-A `SGDClassifier` (scikit-learn) with a linear kernel is trained with:
+A `SGDClassifier` (scikit-learn), which is a linear SVM with its default settings, is trained with:
 
 - Positive examples labelled `+1`
 - Negative examples labelled `−1`
@@ -37,13 +37,13 @@ After training, the learned weight vector (the SVM hyperplane normal) becomes th
 
 ### 4. Search
 
-The SVM weight vector is used to query the vector index — exactly as a CLIP embedding would be — retrieving the top-`n` items closest to the hyperplane's positive side, after applying the skip set and any active filters.
+The SVM weight vector is used to query the index named by `index_name`, or the collection's [default index](/configuration/#default-index) when it isn't set. It retrieves the top-`n` items closest to the hyperplane's positive side, after applying the skip set and any active filters.
 
 ## Pseudo-relevance feedback (PRF)
 
-When `query` is set but `pos` is empty, the engine automatically runs CLIP search on the query string and uses the top 10 results as pseudo-positive examples. This seeds the SVM with a meaningful starting direction without requiring the user to manually select anything.
+When `query` is set, the engine runs the query on the same index and adds the top 10 results to the positive set, even when `pos` IDs are given.
 
-PRF is useful for workflows where the user first describes what they want in text, then refines from there by marking additional examples good or bad.
+PRF takes a text search one step forward as an RF session. The top results act as if the user had marked them relevant, so the user gets RF results without selecting anything first.
 
 ## Session workflow example
 
@@ -66,4 +66,4 @@ Like CLIP search, RF supports the `filters` field. Items that don't match the fi
 
 ## Request reference
 
-See [Search endpoints — POST /exq/search/rf](/api/search/#post-exqsearchrf) for the full request and response schema.
+See [Search endpoints — POST /exq/search/rf](/api/search/#post-%2Fexq%2Fsearch%2Frf) for the full request and response schema.

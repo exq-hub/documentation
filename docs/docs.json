@@ -39,7 +39,9 @@
           "open": true,
           "items": [
             "search/clip",
+            "search/text",
             "search/rf",
+            "search/temporal",
             "search/faceted"
           ]
         },
