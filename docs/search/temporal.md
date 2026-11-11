@@ -10,12 +10,12 @@ The method is described in [Exquisitor at the Video Browser Showdown 2026: Tempo
 
 ## How it works
 
-1. **Anchors** — The first hop retrieves `top_r` segments. These are the anchors that chains start from. Items in `seen` are skipped. Items in `excluded` are left out, together with all segments of their video.
-2. **Pool** — For each later hop, the candidates are the segments of the anchors' videos that start after that video's earliest anchor. Only segments of the `source_type` of the hop's index count, so a hop on a Text index of transcripts matches transcript segments. Segments without a start time are left out.
-3. **Scoring** — Each later hop scores its pool exactly and ranks it, best first.
-4. **Chains** — From each anchor, each later hop picks its best ranked segment of the same video that starts after the previously picked one. A chain ends at the first hop without such a segment, so it can be shorter than the sequence.
-5. **Ranking** — Chains rank by length, then by their RRF score, then by their anchor's rank. The RRF score is the sum of `weight / (rrf_k + rank)` over the chain's hops.
-6. **Selection** — Within a video, a chain whose time span overlaps a better ranked chain by more than `iou_threshold` (IoU) is dropped. Up to `chains_per_video` chains are kept for each of the `n` best videos.
+1. **Anchors.** The first hop retrieves `top_r` segments. These are the anchors that chains start from. Items in `seen` are skipped. Items in `excluded` are left out, together with all segments of their video.
+2. **Pool.** For each later hop, the candidates are the segments of the anchors' videos that start after that video's earliest anchor. Only segments of the `source_type` of the hop's index count, so a hop on a Text index of transcripts matches transcript segments. Segments without a start time are left out.
+3. **Scoring.** Each later hop scores its pool exactly and ranks it, best first.
+4. **Chains.** From each anchor, each later hop picks its best ranked segment of the same video that starts after the previously picked one. A chain ends at the first hop without such a segment, so it can be shorter than the sequence.
+5. **Ranking.** Chains rank by length, then by their RRF score, then by their anchor's rank. The RRF score is the sum of `weight / (rrf_k + rank)` over the chain's hops.
+6. **Selection.** Within a video, a chain whose time span overlaps a better ranked chain by more than `iou_threshold` (IoU) is dropped. Up to `chains_per_video` chains are kept for each of the `n` best videos.
 
 ## Filters
 
@@ -23,8 +23,8 @@ Each hop can set its own `filters`. They are combined with the request's top-lev
 
 ## RF hops
 
-An RF hop trains its SVM the same way as [relevance feedback](/search/rf/) search. If the hop has no `pos` IDs and its `query` finds nothing that passes the filters, the request returns a `400` error instead of no results. See [Responses and errors](/api/search/#responses-and-errors).
+An RF hop trains its SVM the same way as [relevance feedback](/search/rf/) search. If the hop has no `pos` IDs, its positives come only from its `query`, through pseudo relevance feedback. If that query finds nothing that passes the filters and hasn't been seen or excluded, the request returns a `400` error instead of no results. The error names the step, for example "Step 2 of the temporal search has no positives, and its query found no examples with the given filters." See [Responses and errors](/api/search/#responses-and-errors).
 
 ## Request reference
 
-See [Search endpoints — POST /exq/search/temporal](/api/search/#post-%2Fexq%2Fsearch%2Ftemporal) for the request fields, the hop fields, the response, and where segment times come from.
+See [POST /exq/search/temporal](/api/search/#post-%2Fexq%2Fsearch%2Ftemporal) in the search endpoints for the request fields, the hop fields, the response, and where segment times come from.

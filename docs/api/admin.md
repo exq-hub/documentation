@@ -12,7 +12,7 @@ Errors return `{"detail": "..."}`, with status `404` for an unknown collection o
 
 Logs the start of a session and returns the enabled collections. The UI, for example, calls it once when it loads, with a new random session ID.
 
-**Path parameter**: `session` — the session ID, chosen by the client.
+**Path parameter**: `session`, the session ID chosen by the client.
 
 **Response**:
 
@@ -181,7 +181,7 @@ Logs a batch of client-side events, such as clicks and scrolls in the UI, to the
 ```json
 [
   {
-    "ts": 1761580086.0,
+    "ts": 1761580086123,
     "action": "Click <history_model_0__scroll>",
     "element_id": "history_model_0__scroll",
     "route": "/search",
@@ -193,7 +193,7 @@ Logs a batch of client-side events, such as clicks and scrolls in the UI, to the
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `ts` | `number` | Yes | When the event happened, in Unix seconds |
+| `ts` | `number` | Yes | When the event happened on the client, in milliseconds since the Unix epoch, as JavaScript's `Date.now()` gives it. Logged with the event. |
 | `action` | `string` | Yes | What happened. Logged as `Client Event: <action>`. |
 | `element_id` | `string` | No | The UI element involved |
 | `route` | `string` | No | The page the event happened on |
@@ -221,11 +221,14 @@ Returns the health status of the service. It checks that the first collection's 
   "status": "healthy",
   "version": "x.y.z",
   "collections": ["my_collection"],
-  "models_loaded": { "clip": true }
+  "models_loaded": {
+    "CLIP": ["ViT-SO400M-14-SigLIP-384"],
+    "Text": []
+  }
 }
 ```
 
-`collections` lists all enabled collections.
+`collections` lists all enabled collections. `models_loaded` lists the models that are loaded, for each `embedding_type`. A model that is only loaded when it's first used shows up after that first use.
 
 If the check fails, the response is `{"status": "unhealthy", "reason": "..."}`, still with status `200`.
 

@@ -7,7 +7,7 @@ icon: package
 ## Prerequisites
 
 - **Python 3.13+**
-- **[uv](https://docs.astral.sh/uv/)** — fast Python package manager
+- **[uv](https://docs.astral.sh/uv/)**, a fast Python package manager
 - A GPU (CUDA or Apple Silicon) is recommended. CPU also works.
 - For each collection: a SQLite database, embedding files, and index files. See [Database](/database/) and [Vector indices](/indices/).
 
@@ -66,11 +66,14 @@ A healthy server responds with:
   "status": "healthy",
   "version": "x.y.z",
   "collections": ["my_collection"],
-  "models_loaded": { "clip": true }
+  "models_loaded": {
+    "CLIP": ["ViT-SO400M-14-SigLIP-384"],
+    "Text": []
+  }
 }
 ```
 
-`collections` lists the enabled collections. The check covers the first collection only. It verifies that its database and default index are loaded. If not, it returns `{"status": "unhealthy", "reason": "..."}`.
+`collections` lists the enabled collections. `models_loaded` lists the loaded models for each `embedding_type`. See [GET /health](/api/admin/#get-%2Fhealth) for details. The check covers the first collection only. It verifies that its database and default index are loaded. If not, it returns `{"status": "unhealthy", "reason": "..."}`.
 
 ## Development commands
 
@@ -89,13 +92,15 @@ A healthy server responds with:
 
 The first time a CLIP model is loaded, [open_clip](https://github.com/mlfoundations/open_clip) downloads the full model to the Hugging Face cache (`~/.cache/huggingface/hub`, or `HF_HUB_CACHE` if set). The engine then keeps only what it needs for text queries:
 
-- the text encoder in `data/models/<model_name>_text.pth`
-- the tokenizer in `data/tokenizers/<model_name>.pth`
+- the text encoder in `data/models/<model_name>_text_open_clip-<version>.pth`
+- the tokenizer in `data/tokenizers/<model_name>_open_clip-<version>.pth`
+
+Here `<version>` is the installed open_clip version.
 
 Later startups load only the text encoder from these files, without the need of internet. The copy in the Hugging Face cache is no longer used and can be deleted.
 
 At startup, only the default index's model loads. Other models load on first use, so query those indexes once while online. With `preload_all_indexes = true`, all models load at startup.
 
-After upgrading `open_clip_torch` or `transformers`, delete the model's files in `data/models/` and `data/tokenizers/`. They are rebuilt on the next start, from the Hugging Face cache if the model is still there, or by downloading it again.
+After upgrading `open_clip_torch`, the files are rebuilt on the next start, because their names include the open_clip version. They are rebuilt from the Hugging Face cache if the model is still there, or by downloading it again. The files of the old version are no longer used and can be deleted. After upgrading `transformers`, delete the model's files in `data/models/` and `data/tokenizers/` yourself, because their names don't change.
 
 Text (sentence-transformers) models are not stored in `data/`. They download to the Hugging Face cache (`~/.cache/huggingface/hub`, or `HF_HUB_CACHE` if set). To stop them checking online for updates at startup, set `HF_HUB_OFFLINE=1`.

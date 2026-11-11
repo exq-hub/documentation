@@ -49,8 +49,8 @@ Returns what a client needs to show an item. Optionally includes metadata values
   "name": 1093987,
   "mediaId": 1093987,
   "mediaType": 1,
-  "thumbPath": "https://media.example.com/v3c/keyframes/07504/shot07504_58_RKF.jpg",
-  "srcPath": "https://media.example.com/v3c/keyframes/07504/shot07504_58_RKF.jpg",
+  "thumbPath": "https://media.example.com/my_collection/keyframes/video_0042/keyframe_58.jpg",
+  "srcPath": "https://media.example.com/my_collection/keyframes/video_0042/keyframe_58.jpg",
   "groupId": 1093929,
   "metadata": { "Start (ms)": 144177, "End (ms)": 144577 }
 }
@@ -62,7 +62,7 @@ Returns what a client needs to show an item. Optionally includes metadata values
 | `name` | `integer` | Currently the media ID |
 | `mediaId` | `integer` | Media ID |
 | `mediaType` | `integer` | ID of the item's source type in the database's `source_types` table (e.g. `1` Image, `2` Video) |
-| `thumbPath` | `string` | Full thumbnail URL, built from the collection's `thumbnail_media_url` and `thumbnail_media_params` |
+| `thumbPath` | `string \| null` | Full thumbnail URL, built from the collection's `thumbnail_media_url` and `thumbnail_media_params`. `null` when the item has no thumbnail, for example a whole video. |
 | `srcPath` | `string` | Full media URL, built from the collection's `original_media_url` and `original_media_params` |
 | `groupId` | `integer \| null` | Media ID of the item's group, e.g. its video. `null` for a group item itself. |
 | `metadata` | `object` | Only when `filterIds` is given. Tagset name to value. Multiple values come as a list. Tagsets without a value for this item are left out. |
