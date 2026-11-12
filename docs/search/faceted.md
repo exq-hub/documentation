@@ -9,7 +9,7 @@ Faceted search returns items that satisfy a filter expression tree without perfo
 ## How it works
 
 1. **Compile filters.** The filter tree is turned into a single SQL query. It checks each item against its own tags and the tags of its group, as described in [How filters are applied](/filters/#how-filters-are-applied).
-2. **Query the database.** The query runs against the SQLite database of the collection. Of the items that match, only those in the index named by `index_name`, or in the collection's [default index](/configuration/#default-index), are kept. For a CLIP index of keyframes, that means only keyframes are returned. Up to `n` of them are returned, in no particular order.
+2. **Query the database.** The query runs against the collection's database. Of the items that match, only those in the index named by `index_name`, or in the collection's [default index](/configuration/#default-index), are kept. For a CLIP index of keyframes, that means only keyframes are returned. Up to `n` of them are returned, in no particular order.
 3. **Return results.** The matching IDs are returned in the `suggestions` array in the standard search response shape.
 
 Because no embedding lookup is involved, faceted search is very fast.

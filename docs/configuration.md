@@ -82,7 +82,7 @@ original_media_url = "https://media.example.com/my_collection/originals"
 |-----|----------|---------|-------------|
 | `name` | Yes | | Collection identifier |
 | `enabled` | No | `false` | Collections without `enabled = true` are skipped. |
-| `database_file` | Yes | | Path to the collection's SQLite database. Must exist. |
+| `database_file` | Yes | | Path to the collection's database file. Must exist. See [Database](/database/). |
 | `thumbnail_media_url` | Yes | | Base URL for thumbnails |
 | `original_media_url` | Yes | | Base URL for original media |
 | `thumbnail_media_params` | No | `{}` | Query parameters appended to every thumbnail URL |

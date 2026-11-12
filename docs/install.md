@@ -9,7 +9,7 @@ icon: package
 - **Python 3.13+**
 - **[uv](https://docs.astral.sh/uv/)**, a fast Python package manager
 - A GPU (CUDA or Apple Silicon) is recommended. CPU also works.
-- For each collection: a SQLite database, embedding files, and index files. See [Database](/database/) and [Vector indices](/indices/).
+- For each collection: a metadata database, embedding files, and index files. See [Database](/database/) and [Vector indices](/indices/).
 
 ## Setup
 

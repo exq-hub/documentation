@@ -13,7 +13,7 @@ CLIP search converts a natural language query into a dense embedding and finds t
 3. **Normalise.** The resulting embedding vector is L2-normalised so that dot-product similarity equals cosine similarity.
 4. **Build skip set.** The union of `seen`, `excluded` together with all items in their group (e.g. the whole video), and any IDs excluded by the active `filters` is computed. These IDs are skipped during retrieval.
 5. **Search index.** The normalised query vector is searched against the CLIP index named by `index_name`, or the [default CLIP index](/configuration/#default-index) when it isn't set, for the top-`n` results that are not in the skip set. See [Vector indices](/indices/) for backend details.
-6. **Map IDs.** Index positions are translated back to media IDs via the `numerical_int_tags` mapping in the SQLite database.
+6. **Map IDs.** Index positions are translated back to media IDs via the `numerical_int_tags` mapping in the collection's database.
 
 ## Model
 

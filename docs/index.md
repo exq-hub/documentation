@@ -14,7 +14,7 @@ The **Live Services Engine (LSE)** is the Python/FastAPI backend for [Exquisitor
 - **Temporal search**: an ordered sequence of queries matched to segments that occur one after another in the same video
 - **Faceted filtering**: metadata-only queries using a composable filter expression tree
 
-The engine serves multiple independent collections from one process. Each collection has its own SQLite metadata database and one or more vector indexes.
+The engine serves multiple independent collections from one process. Each collection has its own metadata database and one or more vector indexes.
 
 ## Key features
 
@@ -41,7 +41,7 @@ FastAPI (main.py)
         ┌───────────────────┼───────────────────┐
         ▼                   ▼                   ▼
   Model managers     IndexRepository     DatabaseRepository
-  (per embedding     (vector indexes)    (SQLite per collection)
+  (per embedding     (vector indexes)    (one per collection)
    type)
 ```
 
