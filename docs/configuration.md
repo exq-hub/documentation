@@ -117,7 +117,7 @@ Each collection needs at least one index. An index is one searchable set of embe
 |-----|----------|---------|-------------|
 | `name` | Yes | | Index name, unique within the collection. Used as `index_name` in search requests. |
 | `index_type` | Yes | | Index backend. Currently `zarr` or `faiss`. See [Vector indices](/indices/). |
-| `embeddings_file` | Yes | | Path to the embeddings, as a Zarr store (`.zip`, `.zipstore`, or `.zarr`). Relevance feedback reads vectors from it. Must exist. |
+| `embeddings_file` | Yes | | Path to the embeddings, as a Zarr store (`.zip`, `.zipstore`, or `.zarr`). Needed for every index type. See [Vector indices](/indices/). Must exist. |
 | `index_file` | Depends on `index_type` | | Path to the index file. Required for `faiss`. Not allowed for `zarr`, which searches `embeddings_file` directly. |
 | `embedding_type` | No | `"CLIP"` | Embedding family. Currently `CLIP` or `Text`. Sets which model encodes queries. `/exq/search/clip` searches `CLIP` indexes, and `/exq/search/text` searches `Text` indexes. Relevance feedback and temporal search accept either. |
 | `model_name` | No | `"ViT-SO400M-14-SigLIP-384"` | Model that produced the embeddings. See [Model names](#model-names). |
