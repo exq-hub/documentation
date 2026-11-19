@@ -127,24 +127,13 @@ Each collection needs at least one index. An index is one searchable set of embe
 
 ### Model names
 
-`CLIP` indexes are loaded with open_clip, and only open_clip models with `webli` weights can be used by name, such as the default `ViT-SO400M-14-SigLIP-384`. To use another model from the Hugging Face Hub, set `model_name = "hf-hub:organization/repository"`. For a model from anywhere else, download it into a folder with an `open_clip_config.json` and a weights file, and set `model_name = "local-dir:/path/to/folder"`. In each case, the model must have its own text encoder, as SigLIP models do.
+`CLIP` indexes are loaded with open_clip. A plain open_clip model name, such as the default `ViT-SO400M-14-SigLIP-384`, works when open_clip has one set of weights for that model. For a model with several, such as `ViT-B-32`, use the `hf-hub:` name of the weights you want, such as `hf-hub:timm/vit_base_patch32_clip_224.openai`. If you give the plain name of such a model, the engine stops at startup and lists the `hf-hub:` names to choose from. Any other model on the Hugging Face Hub can also be used with `model_name = "hf-hub:organization/repository"`. For a model from anywhere else, download it into a folder with an `open_clip_config.json` and a weights file, and set `model_name = "local-dir:/path/to/folder"`.
 
 `Text` indexes are loaded with sentence-transformers. To use a model from the Hugging Face Hub, set `model_name` to its name, such as `"sentence-transformers/all-MiniLM-L6-v2"`. For a model from anywhere else, download it into a folder as saved by sentence-transformers, and set `model_name = "/path/to/folder"`.
 
 A model already in the Hugging Face cache is not downloaded again.
 
-On Windows, `hf-hub:` and `local-dir:` names can't be used directly, as the cached file names would contain a `:`. Instead, save the text encoder and tokenizer yourself under a name of your choice, and set `model_name` to that name. The engine then loads them and skips the download:
-
-```python
-import open_clip, torch
-
-model = open_clip.create_model("hf-hub:organization/repository", device="cpu", require_pretrained=True)
-version = open_clip.__version__
-torch.save(model.text, f"data/models/my-model_text_open_clip-{version}.pth")
-torch.save(open_clip.get_tokenizer("hf-hub:organization/repository"), f"data/tokenizers/my-model_open_clip-{version}.pth")
-```
-
-Then set `model_name = "my-model"`. The file names include the open_clip version, so run the script again after upgrading `open_clip_torch`.
+`hf-hub:` and `local-dir:` names also work on Windows, because the engine replaces characters such as `:` when it names its cache files.
 
 See [Install](/install/#model-cache-and-running-offline) for where models are downloaded and cached.
 

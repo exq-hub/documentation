@@ -92,10 +92,10 @@ A healthy server responds with:
 
 The first time a CLIP model is loaded, [open_clip](https://github.com/mlfoundations/open_clip) downloads the full model to the Hugging Face cache (`~/.cache/huggingface/hub`, or `HF_HUB_CACHE` if set). The engine then keeps only what it needs for text queries:
 
-- the text encoder in `data/models/<model_name>_text_open_clip-<version>.pth`
-- the tokenizer in `data/tokenizers/<model_name>_open_clip-<version>.pth`
+- the text encoder in `data/models/<name>_text-encoder_open_clip-<version>.pth`
+- the tokenizer in `data/tokenizers/<name>_open_clip-<version>.pth`
 
-Here `<version>` is the installed open_clip version.
+Here `<name>` is the `model_name` with characters such as `/` and `:` replaced by `_`, cut to 60 characters, and followed by a short hash of the full name. `<version>` is the installed open_clip version.
 
 Later startups load only the text encoder from these files, without the need of internet. The copy in the Hugging Face cache is no longer used and can be deleted.
 
