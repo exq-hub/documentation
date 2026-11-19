@@ -46,7 +46,6 @@ Returns what a client needs to show an item. Optionally includes metadata values
 ```json
 {
   "id": 1093987,
-  "name": 1093987,
   "mediaId": 1093987,
   "mediaType": 1,
   "thumbPath": "https://media.example.com/my_collection/keyframes/video_0042/keyframe_58.jpg",
@@ -59,7 +58,6 @@ Returns what a client needs to show an item. Optionally includes metadata values
 | Field | Type | Description |
 |-------|------|-------------|
 | `id` | `integer` | Media ID |
-| `name` | `integer` | Currently the media ID |
 | `mediaId` | `integer` | Media ID |
 | `mediaType` | `integer` | ID of the item's source type in the database's `source_types` table (e.g. `1` Image, `2` Video) |
 | `thumbPath` | `string \| null` | Full thumbnail URL, built from the collection's `thumbnail_media_url` and `thumbnail_media_params`. `null` when the item has no thumbnail, for example a whole video. |
@@ -98,7 +96,7 @@ Same as [`/exq/item/info`](#post-%2Fexq%2Fitem%2Finfo), for many items in one ca
 ```json
 {
   "items": [
-    { "id": 1093987, "name": 1093987, "mediaId": 1093987, "mediaType": 1, "thumbPath": "...", "srcPath": "...", "groupId": 1093929 }
+    { "id": 1093987, "mediaId": 1093987, "mediaType": 1, "thumbPath": "...", "srcPath": "...", "groupId": 1093929 }
   ],
   "missing": [999999999]
 }
