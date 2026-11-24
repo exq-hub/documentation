@@ -4,7 +4,7 @@ description: How a collection's media, groups and metadata are stored, and what 
 icon: database
 ---
 
-Each collection has its own SQLite database file, set with `database_file` in the collection's section of `config.toml` (see [Configuration](/configuration/#collections)). Exquisitor only reads from it while it runs.
+Each collection has its own SQLite database file, set with `database_file` in the collection's section of `config.toml` (see [Configuration](/configuration/#%5B%5Bcollections%5D%5D)). Exquisitor only reads from it while it runs.
 
 ## How the data is organised
 
@@ -49,13 +49,13 @@ Only media of the index's `source_type` are mapped, such as images for a CLIP in
 
 ## Building a database
 
-You don't need to write any SQL to build a collection's database. Describe the collection in JSON files and load them with the [Simplified M³ loader](https://github.com/Ok2610/Simplified-M3-DB). One file lists your fields and their types, one lists your media with their source, type, thumbnail and group, and one lists the values each media has. A further file can add values to fields ahead of time, but this is optional. The loader's README shows the format of each file with examples and the commands that create the database and load the files into it.
+You don't need to write any SQL to build a collection's database. Describe the collection in JSON files and load them with the [Simplified M³ loader](https://github.com/Ok2610/Simplified-M3-DB). One file lists your fields and their types, one lists your media with their source, type, thumbnail and group, and one lists the values each media has. A further file can add values to fields ahead of time, but this is optional. The loader's documentation shows [the format of each file](https://github.com/Ok2610/Simplified-M3-DB/blob/main/docs/json-files.md) with examples, and [the commands](https://github.com/Ok2610/Simplified-M3-DB/blob/main/docs/commands.md) that create the database and load the files into it.
 
 Each media an index covers needs its position in that index as a value of the index's `Index ID` field. Position 0 is the first embedding in the index's embeddings file, position 1 the second, and so on. See [Vector indices](/indices/) for the embedding files.
 
 ## Reference: tables
 
-If you want to look inside a database file yourself, this is where each part of the model is stored. The full definitions are in the loader's [ddl.sql](https://github.com/Ok2610/Simplified-M3-DB/blob/main/ddl.sql).
+If you want to look inside a database file yourself, this is where each part of the model is stored. The full definitions are in the loader's [ddl.sql](https://github.com/Ok2610/Simplified-M3-DB/blob/main/m3db/ddl.sql).
 
 | Table | What it holds |
 |-------|---------------|

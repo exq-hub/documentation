@@ -8,7 +8,7 @@ The engine keeps an audit log of what happens in each session, such as searches,
 
 ## Log file
 
-The audit log is written to the directory set in the [`[logging]` section](/configuration/#logging) of the config, which is `./logs/` by default. Each server start writes a new file, `audit_<YYYY-MM-DD_HH-MM-SS>.log`, and all collections log to that same file. The directory is created if it doesn't exist. Entries are only ever appended, so a log file is never truncated or overwritten.
+The audit log is written to the directory set in the [`[logging]` section](/configuration/#%5Blogging%5D) of the config, which is `./logs/` by default. Each server start writes a new file, `audit_<YYYY-MM-DD_HH-MM-SS>.log`, and all collections log to that same file. The directory is created if it doesn't exist. Entries are only ever appended, so a log file is never truncated or overwritten.
 
 ## Format
 

@@ -4,7 +4,7 @@ description: How Exquisitor searches embeddings, how to choose an index type, an
 icon: database-zap
 ---
 
-An index is one searchable set of embeddings in a collection, for example of keyframes or of transcripts. Each index has its own entry under `[[collections.indexes]]` in `config.toml`, and its `index_type` decides how it is searched (see [Configuration](/configuration/#collectionsindexes)). Indexes in one collection can use different types.
+An index is one searchable set of embeddings in a collection, for example of keyframes or of transcripts. Each index has its own entry under `[[collections.indexes]]` in `config.toml`, and its `index_type` decides how it is searched (see [Configuration](/configuration/#%5B%5Bcollections.indexes%5D%5D)). Indexes in one collection can use different types.
 
 ## Embeddings and positions
 
