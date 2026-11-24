@@ -75,7 +75,7 @@ Create a file called `Caddyfile` in the `live-services-engine` folder with this 
 
 ```
 localhost:5000 {
-	@api path /exq* /dres*
+	@api path /exq*
 	reverse_proxy @api localhost:8000
 
 	@media path /pvd/*
