@@ -4,7 +4,7 @@ description: Composable filter expression trees for constraining search results 
 icon: sliders-horizontal
 ---
 
-Filters allow search requests to constrain results to items that match metadata conditions. They are available on all three search strategies and are expressed as a JSON tree of logical operators and leaf conditions.
+Filters allow search requests to constrain results to items that match metadata conditions. They are available on every search endpoint, and faceted search requires them. They are expressed as a JSON tree of logical operators and leaf conditions.
 
 ## Overview
 
@@ -62,7 +62,7 @@ A group node combines child nodes with a logical operator.
 
 ## Constraints
 
-### `DBValueConstraint` — categorical match
+### `DBValueConstraint` (categorical match)
 
 Matches items that have one or more of the specified tag value IDs.
 
@@ -76,9 +76,9 @@ Matches items that have one or more of the specified tag value IDs.
 | Field | Type | Description |
 |-------|------|-------------|
 | `value_ids` | `list[int]` | Tag value IDs to match (retrieve from [filter values endpoint](/api/admin/)) |
-| `operator` | `"AND"` \| `"OR"` | `OR` = item must have at least one; `AND` = item must have all |
+| `operator` | `"AND"` \| `"OR"` | With `OR`, an item must have at least one of the tags. With `AND`, it must have all of them. Default `OR`. |
 
-### `DBRangeConstraint` — numerical range
+### `DBRangeConstraint` (numerical range)
 
 Matches items whose tag value falls within an inclusive range.
 
@@ -94,7 +94,7 @@ Matches items whose tag value falls within an inclusive range.
 | `lower_bound` | `int \| float \| string` | Lower bound (inclusive) |
 | `upper_bound` | `int \| float \| string` | Upper bound (inclusive) |
 
-### `DBFilter` — the condition wrapper
+### `DBFilter` (the condition wrapper)
 
 ```json
 {
@@ -110,21 +110,31 @@ Matches items whose tag value falls within an inclusive range.
 | `tagtype_id` | `integer` | Tag-type ID (from [filter definitions](/api/admin/)) |
 | `constraint` | `DBValueConstraint \| DBRangeConstraint` | The actual condition |
 
+## How filters are applied
+
+A filter is checked on each item. An item counts its own tags and the tags of its group, for example a keyframe counts the tags of its video. So a keyframe of a travel video matches a filter on the video's category, even though the keyframe itself has no category. This also lets one filter combine tags from different levels, such as the video's category and the keyframe's start time. A negated condition works the same way, so "not documentary" leaves out documentary videos and all their keyframes.
+
+For searches that rank items by similarity, when 10,000 or fewer items pass the filters and haven't been seen or excluded, the engine scores those items exactly instead of searching the index. Otherwise, it searches the index and skips the items that don't pass. Either way, all results pass the filters.
+
+Temporal search hops can also add their own filters. See [Temporal search](/search/temporal/#filters).
+
 ## Examples
+
+The examples use a video collection. Each video has a Categories tagset, and each keyframe has a Start (ms) tagset with its time in the video. The IDs are only examples, so look up the IDs of your own collection as described in [Discovering filter IDs](#discovering-filter-ids).
 
 ### Single category filter
 
-"Show items tagged as *Sports* or *News*":
+"Show *documentary* or *travel* videos and their keyframes". Categories is tagset 2, an alphanumerical tagset (tag type 1). The tag `documentary` has ID 10 and `travel` has ID 65.
 
 ```json
 {
   "root": {
     "kind": "leaf",
     "filter": {
-      "id": 1,
-      "tagtype_id": 2,
+      "id": 2,
+      "tagtype_id": 1,
       "constraint": {
-        "value_ids": [10, 11],
+        "value_ids": [10, 65],
         "operator": "OR"
       }
     }
@@ -132,20 +142,20 @@ Matches items whose tag value falls within an inclusive range.
 }
 ```
 
-### Date range filter
+### Range filter
 
-"Show items from 2020 to 2024":
+"Show keyframes that start between 5 and 60 seconds into their video". Start (ms) is tagset 6, a whole-number tagset (tag type 5).
 
 ```json
 {
   "root": {
     "kind": "leaf",
     "filter": {
-      "id": 3,
-      "tagtype_id": 3,
+      "id": 6,
+      "tagtype_id": 5,
       "constraint": {
-        "lower_bound": 2020,
-        "upper_bound": 2024
+        "lower_bound": 5000,
+        "upper_bound": 60000
       }
     }
   }
@@ -154,7 +164,7 @@ Matches items whose tag value falls within an inclusive range.
 
 ### Compound AND filter
 
-"Show *Sports* items from 2022 to 2024":
+"Show keyframes of *travel* videos that start between 5 and 60 seconds into the video". The category is a tag of the video and the start time is a tag of the keyframe, so this combines both levels.
 
 ```json
 {
@@ -165,10 +175,10 @@ Matches items whose tag value falls within an inclusive range.
       {
         "kind": "leaf",
         "filter": {
-          "id": 1,
-          "tagtype_id": 2,
+          "id": 2,
+          "tagtype_id": 1,
           "constraint": {
-            "value_ids": [10],
+            "value_ids": [65],
             "operator": "OR"
           }
         }
@@ -176,11 +186,11 @@ Matches items whose tag value falls within an inclusive range.
       {
         "kind": "leaf",
         "filter": {
-          "id": 3,
-          "tagtype_id": 3,
+          "id": 6,
+          "tagtype_id": 5,
           "constraint": {
-            "lower_bound": 2022,
-            "upper_bound": 2024
+            "lower_bound": 5000,
+            "upper_bound": 60000
           }
         }
       }
@@ -191,21 +201,38 @@ Matches items whose tag value falls within an inclusive range.
 
 ### Negated filter
 
-"Show everything *except* Documentary":
+"Show *travel* videos that are not *documentary* videos, and their keyframes". A video tagged with both categories is left out, together with its keyframes.
 
 ```json
 {
   "root": {
-    "kind": "leaf",
-    "not_": true,
-    "filter": {
-      "id": 1,
-      "tagtype_id": 2,
-      "constraint": {
-        "value_ids": [12],
-        "operator": "OR"
+    "kind": "group",
+    "operator": "AND",
+    "children": [
+      {
+        "kind": "leaf",
+        "filter": {
+          "id": 2,
+          "tagtype_id": 1,
+          "constraint": {
+            "value_ids": [65],
+            "operator": "OR"
+          }
+        }
+      },
+      {
+        "kind": "leaf",
+        "not_": true,
+        "filter": {
+          "id": 2,
+          "tagtype_id": 1,
+          "constraint": {
+            "value_ids": [10],
+            "operator": "OR"
+          }
+        }
       }
-    }
+    ]
   }
 }
 ```
@@ -214,7 +241,7 @@ Matches items whose tag value falls within an inclusive range.
 
 Use the admin endpoints to look up the correct IDs before building a filter:
 
-1. **GET** `/exq/info/filters/{session}/{collection}` — lists all tagsets with their `id` and `tagtype_id`.
-2. **GET** `/exq/info/filters/values/{session}/{collection}/{tagtypeId}/{tagsetId}` — lists all valid `value_ids` for a categorical tagset.
+1. **GET** `/exq/info/filters/{session}/{collection}` lists all tagsets with their `id` and `tagtypeId`. These go into a filter's `id` and `tagtype_id`.
+2. **GET** `/exq/info/filters/values/{session}/{collection}/{tagtypeId}/{tagsetId}` lists all valid `value_ids` for a categorical tagset.
 
 See [Admin endpoints](/api/admin/) for details.

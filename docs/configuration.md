@@ -1,145 +1,236 @@
 ---
 title: Configuration
-description: Complete reference for the INI configuration file that controls collections, server settings, and model behaviour.
+description: Complete reference for the TOML configuration file that controls server settings, collections, and their indexes.
 icon: settings
 ---
 
-The engine reads its configuration from `./data/config.ini` on startup. The file uses standard INI syntax and is divided into three tiers:
+The engine reads its configuration from `./data/config.toml` on startup. Start from the template:
+
+```bash
+cp data/config.toml.template data/config.toml
+```
+
+The file has these sections:
 
 | Section | Purpose |
-|---------|---------|
-| `[DEFAULT]` | Shared defaults inherited by all sections |
-| `[SERVER]` and `[LOGGING]` | Reserved system sections |
-| Any other section name | Defines a collection |
+|-------|---------|
+| `[default]` | Global defaults (model device) |
+| `[server]` | Bind address, port, and hot-reload |
+| `[logging]` | Log level and audit log directory |
+| `[[collections]]` | One section per collection |
+| `[[collections.indexes]]` | One section per index, nested under its collection |
 
-## `[DEFAULT]`
+Relative paths depend on the working directory. Start the server from the repository root.
 
-```ini
-[DEFAULT]
-ModelDevice = auto
+## `[default]`
+
+```toml
+[default]
+model_device = "auto"
 ```
 
-| Key | Values | Description |
-|-----|--------|-------------|
-| `ModelDevice` | `auto`, `cpu`, `cuda`, `mps`, `cuda:N` | Device for CLIP inference. `auto` selects CUDA → MPS → CPU in that order. |
+| Key | Default | Values | Description |
+|-----|---------|--------|-------------|
+| `model_device` | `"auto"` | `auto`, `cpu`, `cuda`, `cuda:N`, `mps` | Device for model inference. `auto` picks CUDA, then MPS, then CPU. |
 
-## `[SERVER]`
+## `[server]`
 
-```ini
-[SERVER]
-Host = 127.0.0.1
-Port = 8000
-Reload = False
-```
-
-| Key | Default | Description |
-|-----|---------|-------------|
-| `Host` | `127.0.0.1` | Bind address for the uvicorn server |
-| `Port` | `8000` | TCP port |
-| `Reload` | `False` | Enable hot-reload for development (`True` / `False`) |
-
-## `[LOGGING]`
-
-```ini
-[LOGGING]
-Level = INFO
+```toml
+[server]
+host = "127.0.0.1"
+port = 8000
+reload = true
 ```
 
 | Key | Default | Description |
 |-----|---------|-------------|
-| `Level` | `INFO` | Python logging level (`DEBUG`, `INFO`, `WARNING`, `ERROR`) |
+| `host` | `"127.0.0.1"` | Bind address for the uvicorn server |
+| `port` | `8000` | TCP port |
+| `reload` | `true` | Hot-reload on code changes (development) |
 
-## Collection sections
+`uv run python main.py` uses these settings. `invoke run` does not. See [Install](/install/#run).
 
-Each named section (other than `DEFAULT`, `SERVER`, `LOGGING`) defines one collection. The section name becomes the collection identifier used in API requests.
+## `[logging]`
 
-```ini
-[my_collection]
-Enabled = True
-IndexType = faiss
-EmbeddingsFile = ./data/my_collection/embeddings.zarr.zip
-CLIPIndexFile  = ./data/my_collection/index.faiss
-DatabaseFile   = ./data/my_collection/collection.db
-ThumbnailMediaURL = https://cdn.example.com/thumbs/
-OriginalMediaURL  = https://cdn.example.com/originals/
-LogDirectory   = ./logs/my_collection/
+```toml
+[logging]
+level = "INFO"
+directory = "./logs/"
 ```
 
-### Collection keys
+| Key | Default | Description |
+|-----|---------|-------------|
+| `level` | `"INFO"` | Python log level (`DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`) |
+| `directory` | `"./logs/"` | Directory for the audit log. Created if missing. See [Logging](/logging/). |
 
-| Key | Required | Description |
-|-----|----------|-------------|
-| `Enabled` | Yes | `True` to load the collection at startup; `False` to skip it |
-| `IndexType` | Yes | `zarr` or `faiss` — selects the vector index backend |
-| `EmbeddingsFile` | Yes | Path to the Zarr archive (`.zarr.zip`) containing item embeddings |
-| `DatabaseFile` | Yes | Path to the SQLite database for this collection |
-| `ThumbnailMediaURL` | Yes | Base URL prepended to thumbnail URIs returned by the API |
-| `OriginalMediaURL` | Yes | Base URL prepended to full-resolution URIs |
-| `CLIPIndexFile` | FAISS only | Path to the `.faiss` index file — required when `IndexType = faiss` |
-| `LogDirectory` | No | Directory for audit log files. Audit logging is disabled if omitted |
+Each server start writes a new audit log file, `audit_<YYYY-MM-DD_HH-MM-SS>.log`. All collections log to this file. With `reload = true`, every reload also starts a new file.
 
-## Index types
+## `[[collections]]`
 
-### `zarr` — brute-force search
+Each `[[collections]]` section defines one collection. API requests refer to it by `name`, in `session_info.collection`.
 
-The `EmbeddingsFile` Zarr archive is loaded into memory and searched exhaustively via dot-product similarity, parallelised across CPU threads. No separate index file is needed.
-
-Use `zarr` for smaller collections (up to a few hundred thousand items) or when you want exact nearest-neighbour results.
-
-```ini
-[small_collection]
-Enabled = True
-IndexType = zarr
-EmbeddingsFile = ./data/small/embeddings.zarr.zip
-DatabaseFile   = ./data/small/collection.db
-ThumbnailMediaURL = https://cdn.example.com/small/thumbs/
-OriginalMediaURL  = https://cdn.example.com/small/originals/
+```toml
+[[collections]]
+name = "my_collection"
+enabled = true
+database_file = "./data/my_collection/my_collection.db"
+thumbnail_media_url = "https://media.example.com/my_collection/thumbs"
+original_media_url = "https://media.example.com/my_collection/originals"
 ```
 
-### `faiss` — approximate nearest-neighbour search
+| Key | Required | Default | Description |
+|-----|----------|---------|-------------|
+| `name` | Yes | | Collection identifier |
+| `enabled` | No | `false` | Collections without `enabled = true` are skipped. |
+| `database_file` | Yes | | Path to the collection's database file. Must exist. See [Database](/database/). |
+| `thumbnail_media_url` | Yes | | Base URL for thumbnails |
+| `original_media_url` | Yes | | Base URL for original media |
+| `thumbnail_media_params` | No | `{}` | Query parameters appended to every thumbnail URL |
+| `original_media_params` | No | `{}` | Query parameters appended to every original media URL |
+| `preload_all_indexes` | No | `false` | Load all indexes and their models at startup, not on first use |
 
-A pre-built FAISS index (IVF or HNSW) is loaded alongside the embeddings file. Searches are approximate but orders of magnitude faster for large collections. The index supports incremental search, automatically expanding the probe range when fewer than `n` results survive the skip and filter steps.
+### Media URLs
 
-```ini
-[large_collection]
-Enabled = True
-IndexType = faiss
-EmbeddingsFile = ./data/large/embeddings.zarr.zip
-CLIPIndexFile  = ./data/large/index.faiss
-DatabaseFile   = ./data/large/collection.db
-ThumbnailMediaURL = https://cdn.example.com/large/thumbs/
-OriginalMediaURL  = https://cdn.example.com/large/originals/
+Item URLs are built as `<base_url>/<uri>`, where `<uri>` comes from the database. Leave the trailing slash off the base URL.
+
+If the media server needs a token or other query parameters, add them like this:
+
+```toml
+thumbnail_media_params = { token = "your-token" }
+original_media_params = { token = "your-token" }
 ```
+
+This produces URLs like `https://media.example.com/my_collection/thumbs/<uri>?token=your-token`.
+
+## `[[collections.indexes]]`
+
+Each collection needs at least one index. An index is one searchable set of embeddings, for example of keyframes or of transcripts. Indexes in a collection can use different index types and embedding types.
+
+```toml
+  [[collections.indexes]]
+  name = "CLIP"
+  index_type = "zarr"
+  embeddings_file = "./data/my_collection/embeddings.zarr.zip"
+```
+
+| Key | Required | Default | Description |
+|-----|----------|---------|-------------|
+| `name` | Yes | | Index name, unique within the collection. Used as `index_name` in search requests. |
+| `index_type` | Yes | | Index backend. Currently `zarr` or `faiss`. See [Vector indices](/indices/). |
+| `embeddings_file` | Yes | | Path to the embeddings, as a Zarr store (`.zip`, `.zipstore`, or `.zarr`). Needed for every index type. See [Vector indices](/indices/). Must exist. |
+| `index_file` | Depends on `index_type` | | Path to the index file. Required for `faiss`. Not allowed for `zarr`, which searches `embeddings_file` directly. |
+| `embedding_type` | No | `"CLIP"` | Embedding family. Currently `CLIP` or `Text`. Sets which model encodes queries. `/exq/search/clip` searches `CLIP` indexes, and `/exq/search/text` searches `Text` indexes. Relevance feedback and temporal search accept either. |
+| `model_name` | No | `"ViT-SO400M-14-SigLIP-384"` | Model that produced the embeddings. See [Model names](#model-names). |
+| `source_type` | No | `"Image"` | Media type of the indexed items. Currently `Image`, `Video`, `Audio`, `Text`, or `Other`. Must exist in the database's `source_types` table. |
+| `tagset` | No | `"<name> Index ID"` | Database tagset that maps media IDs to index positions. See [Sharing an id space](#sharing-an-id-space). |
+| `default` | See below | `false` | Marks the index used when a request doesn't name one |
+
+### Model names
+
+`CLIP` indexes are loaded with open_clip. A plain open_clip model name, such as the default `ViT-SO400M-14-SigLIP-384`, works when open_clip has one set of weights for that model. For a model with several, such as `ViT-B-32`, use the `hf-hub:` name of the weights you want, such as `hf-hub:timm/vit_base_patch32_clip_224.openai`. If you give the plain name of such a model, the engine stops at startup and lists the `hf-hub:` names to choose from. Any other model on the Hugging Face Hub can also be used with `model_name = "hf-hub:organization/repository"`. For a model from anywhere else, download it into a folder with an `open_clip_config.json` and a weights file, and set `model_name = "local-dir:/path/to/folder"`.
+
+`Text` indexes are loaded with sentence-transformers. To use a model from the Hugging Face Hub, set `model_name` to its name, such as `"sentence-transformers/all-MiniLM-L6-v2"`. For a model from anywhere else, download it into a folder as saved by sentence-transformers, and set `model_name = "/path/to/folder"`.
+
+A model already in the Hugging Face cache is not downloaded again.
+
+`hf-hub:` and `local-dir:` names also work on Windows, because the engine replaces characters such as `:` when it names its cache files.
+
+See [Install](/install/#model-cache-and-running-offline) for where models are downloaded and cached.
+
+### Default index
+
+A collection with one index uses it as the default. A collection with more than one index must mark **exactly one** with `default = true`.
+
+When a request has no `index_name`:
+
+- `/exq/search/rf` and temporal search hops use the default index.
+- `/exq/search/clip` and `/exq/search/text` use the default index if it has the right `embedding_type`. Otherwise, they use the first index of that type.
+
+At startup, only the default index loads. Other indexes load on first use. Set `preload_all_indexes = true` to load all of them at startup.
+
+### Sharing an id space
+
+Each index maps media IDs to index positions through a database tagset. By default it is named `"<name> Index ID"`.
+
+Sometimes several indexes are built from the same embeddings, in the same order. Give them the same `tagset`. They then share one mapping, so the database needs only one copy:
+
+```toml
+  [[collections.indexes]]
+  name = "CLIP_hnsw"
+  index_type = "faiss"
+  index_file = "./data/my_collection/clip_hnsw.faiss"
+  embeddings_file = "./data/my_collection/clip_embeddings.zipstore"
+  tagset = "SigLIP ID"
+  default = true
+
+  [[collections.indexes]]
+  name = "CLIP_ivfpq"
+  index_type = "faiss"
+  index_file = "./data/my_collection/clip_ivfpq.faiss"
+  embeddings_file = "./data/my_collection/clip_embeddings.zipstore"
+  tagset = "SigLIP ID"
+```
+
+## Validation
+
+The server checks the configuration at startup. It refuses to start if:
+
+- the file is missing or isn't `.toml`
+- `database_file`, `embeddings_file`, or a required `index_file` doesn't exist
+- `index_file` is set on a `zarr` index, or missing on a `faiss` index
+- `embedding_type`, `source_type`, or `model_device` has an unsupported value
+- two indexes in a collection share a name
+- a collection with several indexes doesn't mark exactly one as `default`
 
 ## Full example
 
-```ini
-[DEFAULT]
-ModelDevice = auto
+```toml
+[default]
+model_device = "auto"
 
-[SERVER]
-Host = 0.0.0.0
-Port = 8000
-Reload = False
+[server]
+host = "0.0.0.0"
+port = 8000
+reload = false
 
-[LOGGING]
-Level = INFO
+[logging]
+level = "INFO"
+directory = "./logs/"
 
-[videos_2024]
-Enabled = True
-IndexType = faiss
-EmbeddingsFile = ./data/videos_2024/embeddings.zarr.zip
-CLIPIndexFile  = ./data/videos_2024/index.faiss
-DatabaseFile   = ./data/videos_2024/metadata.db
-ThumbnailMediaURL = https://cdn.example.com/videos_2024/thumbs/
-OriginalMediaURL  = https://cdn.example.com/videos_2024/originals/
-LogDirectory   = ./logs/videos_2024/
+# Keyframe search plus transcript search over the same videos.
+[[collections]]
+name = "videos_2024"
+enabled = true
+database_file = "./data/videos_2024/videos_2024.db"
+thumbnail_media_url = "https://media.example.com/videos_2024/thumbs"
+original_media_url = "https://media.example.com/videos_2024/originals"
+original_media_params = { token = "your-token" }
 
-[photos_archive]
-Enabled = True
-IndexType = zarr
-EmbeddingsFile = ./data/photos/embeddings.zarr.zip
-DatabaseFile   = ./data/photos/metadata.db
-ThumbnailMediaURL = https://cdn.example.com/photos/thumbs/
-OriginalMediaURL  = https://cdn.example.com/photos/originals/
+  [[collections.indexes]]
+  name = "CLIP"
+  index_type = "faiss"
+  index_file = "./data/videos_2024/clip_hnsw.faiss"
+  embeddings_file = "./data/videos_2024/clip_embeddings.zipstore"
+  default = true
+
+  [[collections.indexes]]
+  name = "Transcripts"
+  index_type = "zarr"
+  embeddings_file = "./data/videos_2024/transcript_embeddings.zarr"
+  embedding_type = "Text"
+  model_name = "your-sentence-transformers-model"
+  source_type = "Text"
+
+# A small photo collection with a single brute-force index.
+[[collections]]
+name = "photos"
+enabled = true
+database_file = "./data/photos/photos.db"
+thumbnail_media_url = "https://media.example.com/photos/thumbs"
+original_media_url = "https://media.example.com/photos/originals"
+
+  [[collections.indexes]]
+  name = "CLIP"
+  index_type = "zarr"
+  embeddings_file = "./data/photos/embeddings.zarr.zip"
 ```

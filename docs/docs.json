@@ -7,6 +7,7 @@
       "label": "Getting started",
       "items": [
         "index",
+        "quickstart",
         "install",
         "configuration"
       ]
@@ -39,7 +40,9 @@
           "open": true,
           "items": [
             "search/clip",
+            "search/text",
             "search/rf",
+            "search/temporal",
             "search/faceted"
           ]
         },

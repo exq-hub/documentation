@@ -4,87 +4,74 @@ description: Structured audit logging for search requests, item views, and clien
 icon: scroll
 ---
 
-The engine writes a structured audit log for every search request, item retrieval, and client event. Logs are written asynchronously as FastAPI background tasks so they never block request handling.
-
-## Enabling logging
-
-Set `LogDirectory` in the collection's config section:
-
-```ini
-[my_collection]
-LogDirectory = ./logs/my_collection/
-```
-
-If `LogDirectory` is omitted, audit logging is disabled for that collection. The directory is created automatically if it does not exist.
+The engine keeps an audit log of what happens in each session, such as searches, item requests and events sent by the client. Entries are written in the background, so logging doesn't slow down the response.
 
 ## Log file
 
-Each collection writes to a single file:
-
-```
-{LogDirectory}/audit.log
-```
-
-The file is opened in **append mode** and never truncated. Entries are written sequentially.
+The audit log is written to the directory set in the [`[logging]` section](/configuration/#%5Blogging%5D) of the config, which is `./logs/` by default. Each server start writes a new file, `audit_<YYYY-MM-DD_HH-MM-SS>.log`, and all collections log to that same file. The directory is created if it doesn't exist. Entries are only ever appended, so a log file is never truncated or overwritten.
 
 ## Format
 
-Log entries are serialised with [MessagePack](https://msgpack.org/), a compact binary format. Each entry is a MessagePack-encoded map (dictionary) appended to the file:
+Entries are encoded with [MessagePack](https://msgpack.org/), a compact binary format, and appended to the file one after another. Each entry is a map like this:
 
 ```python
 {
-  "action":    str,   # Event type (see below)
-  "session":   str,   # Session ID
-  "timestamp": int,   # Unix milliseconds
-  "data":      dict   # Event-specific payload
+  "timestamp": int,   # Unix time in milliseconds
+  "session":   str,   # Session ID, or "system" for errors
+  "action":    str,   # What happened, for example "CLIP Search"
+  "data":      dict   # Details of the request or event
 }
 ```
 
-To read the log in Python:
+To read a log file in Python:
 
 ```python
 import msgpack
 
-with open("audit.log", "rb") as f:
+with open("logs/audit_2026-01-01_12-00-00.log", "rb") as f:
     unpacker = msgpack.Unpacker(f, raw=False)
     for entry in unpacker:
         print(entry)
 ```
 
-## Event types
+## What gets logged
 
-| `action` | Trigger | `data` payload |
-|----------|---------|----------------|
-| `search_request` | Any search endpoint called | strategy, query/params, n, result IDs, timing |
-| `item_request` | `/exq/item/base` or `/exq/item/details` | requested media IDs |
-| `session_init` | `/exq/init/{session}` | available collections |
-| `add_model` | `/exq/log/addModel` | modelId |
-| `remove_model` | `/exq/log/removeModel` | modelId |
-| `client_event` | `/exq/log/clientEvent` | batch of raw client event objects |
+Most `/exq/` endpoints add an entry, and the `action` names the endpoint in plain words. Besides the fields below, the `data` of most entries also holds the `session`, `modelId` and `collection` of the request.
 
-## Timing fields
+| `action` | Endpoint | `data` |
+|----------|----------|--------|
+| `Initialize Exquisitor LSE Session` | `GET /exq/init/{session}` | The available collections |
+| `Get Total Items` | `POST /exq/info/totalItems` | The collection and its number of items |
+| `Get filter definitions for collection` | `GET /exq/info/filters/{session}/{collection}` | The returned filter definitions |
+| `Get filter values for collection` | `GET /exq/info/filters/values/...` | `tagtypeId` and `tagsetId` |
+| `Log Add Model`, `Log Remove Model` | `POST /exq/log/addModel`, `POST /exq/log/removeModel` | The request body as JSON |
+| `Client Event: <action>` | [`POST /exq/log/clientEvent`](/api/admin/#post-%2Fexq%2Flog%2Fclientevent) | The client's `ts` in Unix milliseconds, `element_id`, `route` and the event body |
+| `CLIP Search`, `Text Search` | `POST /exq/search/clip`, `POST /exq/search/text` | Query, index, filters, excluded IDs, number of seen items, `n_requested` and the suggestions |
+| `RF Search` | `POST /exq/search/rf` | As above, plus the `pos` and `neg` IDs |
+| `Temporal Search` | `POST /exq/search/temporal` | The hops and chain settings, filters, excluded IDs, number of seen items, `n_requested` and the suggestions |
+| `Faceted Search` | `POST /exq/search/faceted` | Filters, index, `n_requested` and the suggestions |
+| `Get Info For Item` | `POST /exq/item/info` | Media ID, name and media type |
+| `Get Info For Items` | `POST /exq/item/info/batch` | Lists of media IDs and names, and the IDs that weren't found |
+| `Get Detailed Info For Item` | `POST /exq/item/details` | Media ID |
+| `Get Related Info For Item` | `POST /exq/item/related` | Media ID and name |
+| `Check if item is in excluded group` | `POST /exq/item/excluded` | Media ID, name and whether it's excluded |
+| `Error` | Any request that fails with an engine error | Error type, message and details, and the request path and method |
 
-Search entries include two timing fields:
+For search entries, `timestamp` is when the request arrived. They also have a `completion_time` next to it, which is how long the search took in milliseconds.
 
-| Field | Description |
-|-------|-------------|
-| `request_timestamp` | Unix ms when the request was received |
-| `completion_time` | Unix ms when results were assembled |
+## How logging works
 
-The difference `completion_time − request_timestamp` gives the wall-clock search latency in milliseconds.
-
-## LoggingService internals
-
-`LoggingService` wraps `AuditLogger` and is initialised during application startup if `LogDirectory` is configured. It exposes async methods that schedule the actual disk write as a FastAPI `BackgroundTask`:
+Route handlers don't write to the log themselves. They hand the logging call to FastAPI as a `BackgroundTask`, which runs after the response has been sent. `LoggingService` builds the entry and passes it to `AuditLogger`, which puts it on a queue. A worker task, started with the server, takes entries from the queue and appends them to the file under a file lock. This keeps responses fast even when disk writes are slow, for example on spinning-disk storage.
 
 ```python
-# In route handler
+# routes/search.py, simplified
 background_tasks.add_task(
     logging_service.log_search_request,
-    request=request,
-    suggestions=result["suggestions"],
-    timing=timing,
+    "CLIP Search",
+    session, model_id, collection,
+    query_data,
+    result["suggestions"],
+    result["request_timestamp"],
+    result["completion_time"],
 )
 ```
-
-This pattern keeps request handlers fast even when writes are slow (e.g. on spinning-disk storage).

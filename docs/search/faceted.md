@@ -4,15 +4,15 @@ description: Metadata-only search using the filter expression tree, with no vect
 icon: filter
 ---
 
-Faceted search returns items that satisfy a filter expression tree without performing any vector similarity computation. It is the right choice when the user wants to browse or count items by metadata — category, date range, source type, etc. — rather than by visual content.
+Faceted search returns items that satisfy a filter expression tree without performing any vector similarity computation. It is the right choice when the user wants to browse or count items by metadata, such as category or time, rather than by visual content.
 
 ## How it works
 
-1. **Compile filters** — The `ActiveFilters` tree is recursively compiled into a SQL `WHERE` clause by `db_helper.py`. Each leaf becomes a join on the tag tables; groups become parenthesised AND/OR blocks; `not_` flags add `NOT` operators.
-2. **Query the database** — The compiled query runs against the SQLite database for the active collection, returning up to `n` matching media IDs.
-3. **Return results** — The matching IDs are returned in the `suggestions` array in the standard search response shape.
+1. **Compile filters.** The filter tree is turned into a single SQL query. It checks each item against its own tags and the tags of its group, as described in [How filters are applied](/filters/#how-filters-are-applied).
+2. **Query the database.** The query runs against the collection's database. Of the items that match, only those in the index named by `index_name`, or in the collection's [default index](/configuration/#default-index), are kept. For a CLIP index of keyframes, that means only keyframes are returned. Up to `n` of them are returned, in no particular order.
+3. **Return results.** The matching IDs are returned in the `suggestions` array in the standard search response shape.
 
-Because no embedding lookup is involved, faceted search is very fast regardless of collection size.
+Because no embedding lookup is involved, faceted search is very fast.
 
 ## When to use faceted search
 
@@ -26,10 +26,10 @@ Because no embedding lookup is involved, faceted search is very fast regardless 
 
 ## Filter requirement
 
-Unlike CLIP and RF search, the `filters` field is **required** for faceted search. An empty or null filter would match every item and is not useful for this strategy.
+Unlike the other searches, the `filters` field is **required** for faceted search. An empty or null filter would match every item and is not useful for this strategy.
 
 See [Filters](/filters/) for the full filter expression reference and examples.
 
 ## Request reference
 
-See [Search endpoints — POST /exq/search/faceted](/api/search/#post-exqsearchfaceted) for the full request and response schema.
+See [POST /exq/search/faceted](/api/search/#post-%2Fexq%2Fsearch%2Ffaceted) in the search endpoints for the full request and response schema.
