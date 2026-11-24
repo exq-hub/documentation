@@ -11,6 +11,7 @@ This guide sets up the Live Services Engine (LSE) and the user interface (UI) on
 - [git](https://git-scm.com/), Python 3.13 or newer, and [uv](https://docs.astral.sh/uv/) for the LSE
 - [Node.js](https://nodejs.org/) for the UI
 - [Caddy](https://caddyserver.com/docs/install), a web server that puts the LSE, the UI and the media behind one secure address
+- [mkcert](https://github.com/FiloSottile/mkcert#installation), which makes a certificate for that address that your browser trusts
 - About 10 GB of free disk space for the sample collection and the search model
 
 ## 1. Get the code
@@ -69,12 +70,33 @@ original_media_url = "https://localhost:5000/pvd"
 
 This sets up one collection called `pvd` with one index over its keyframes. The media URLs point at Caddy, which serves the keyframes and videos from `data/pvd/`. All options are described in [Configuration](/configuration/).
 
-## 4. Configure Caddy
+## 4. Set up HTTPS
+
+Browsers load only a few videos at a time from a plain `http` address, so the UI needs `https`, and with it a certificate that your browser trusts. mkcert makes one in two steps.
+
+First, mkcert creates a small certificate authority (CA) that exists only on your machine and adds it to the certificates your system and browsers trust. You only do this once, and it may ask for your password:
+
+```bash
+mkcert -install
+```
+
+Then it uses that CA to make a certificate for `localhost`. Run this in the `live-services-engine` folder:
+
+```bash
+mkdir -p data/certs
+mkcert -cert-file data/certs/localhost.pem -key-file data/certs/localhost-key.pem localhost
+```
+
+Keep the CA's key, `rootCA-key.pem` in the folder that `mkcert -CAROOT` prints, to yourself. Anyone who has it can make certificates that your machine trusts. How to remove the CA again is described in [Removing the certificate authority](#removing-the-certificate-authority).
+
+## 5. Configure Caddy
 
 Create a file called `Caddyfile` in the `live-services-engine` folder with this content:
 
 ```
 localhost:5000 {
+	tls ./data/certs/localhost.pem ./data/certs/localhost-key.pem
+
 	@api path /exq*
 	reverse_proxy @api localhost:8000
 
@@ -88,9 +110,9 @@ localhost:5000 {
 }
 ```
 
-Caddy then answers at `https://localhost:5000`. It passes API requests to the LSE on port 8000, serves the media from the `data` folder, and passes everything else to the UI on port 3000.
+Caddy then answers at `https://localhost:5000`, with the certificate from `data/certs`. It passes API requests to the LSE on port 8000, serves the media from the `data` folder, and passes everything else to the UI on port 3000.
 
-## 5. Start everything
+## 6. Start everything
 
 Start the LSE, the UI and Caddy, each in its own terminal:
 
@@ -109,11 +131,21 @@ npm run dev
 caddy run
 ```
 
-The first time the LSE starts, it downloads the search model (about 3.3 GB), which can take a few minutes. It is ready once it logs `LSE application initialized successfully`. The first time Caddy starts, it asks for your password to install its own certificate authority, so that your browser trusts `https://localhost:5000`.
+The first time the LSE starts, it downloads the search model (about 3.3 GB), which can take a few minutes. It is ready once it logs `LSE application initialized successfully`.
 
-## 6. Search
+## 7. Search
 
 Open `https://localhost:5000` and pick the `pvd` collection. Type `a sailing boat on the sea` in the search box and press Enter. The results are keyframes, and clicking one opens the video it belongs to.
+
+## Removing the certificate authority
+
+If you no longer need mkcert's CA, remove it from your system and browsers with:
+
+```bash
+mkcert -uninstall
+```
+
+Your browser then no longer trusts the `localhost` certificate. To remove everything mkcert made, also delete the folder that `mkcert -CAROOT` prints, which holds the CA and its key, and the `data/certs` folder.
 
 ## Next steps
 
