@@ -113,7 +113,7 @@ The first time the LSE starts, it downloads the search model (about 3.3 GB), whi
 
 ## 6. Search
 
-Open `https://localhost:5000` and pick the `pvd` collection. Type `a dog on a beach` in the search box and press Enter. The results are keyframes, and clicking one opens the video it belongs to.
+Open `https://localhost:5000` and pick the `pvd` collection. Type `a sailing boat on the sea` in the search box and press Enter. The results are keyframes, and clicking one opens the video it belongs to.
 
 ## Next steps
 
